@@ -1,15 +1,14 @@
-// third-party
 import { combineReducers } from 'redux';
 
 // project import
 import menu from './menu';
 import snackbar from './snackbar';
-
-// ==============================|| COMBINE REDUCERS ||============================== //
+import chat from './chat';   // 👈 ADD THIS
 
 const reducers = combineReducers({
   menu,
-  snackbar
+  snackbar,
+  chat          // 👈 ADD THIS
 });
 
 export default reducers;

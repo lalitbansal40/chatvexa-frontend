@@ -39,20 +39,16 @@ import { getUser, getUserChats, insertChat } from 'store/reducers/chat';
 // assets
 import {
   AudioMutedOutlined,
-  CloseOutlined,
   DeleteOutlined,
   DownloadOutlined,
-  InfoCircleOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   MoreOutlined,
   PaperClipOutlined,
-  PhoneOutlined,
   PictureOutlined,
   SendOutlined,
   SmileOutlined,
-  SoundOutlined,
-  VideoCameraOutlined
+  SoundOutlined
 } from '@ant-design/icons';
 
 // types
@@ -258,15 +254,6 @@ const Chat = () => {
                     </Grid>
                     <Grid item>
                       <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={1}>
-                        <IconButton size="large" color="secondary">
-                          <PhoneOutlined />
-                        </IconButton>
-                        <IconButton size="large" color="secondary">
-                          <VideoCameraOutlined />
-                        </IconButton>
-                        <IconButton onClick={handleUserChange} size="large" color={emailDetails ? 'error' : 'secondary'}>
-                          {emailDetails ? <CloseOutlined /> : <InfoCircleOutlined />}
-                        </IconButton>
                         <IconButton onClick={handleClickSort} size="large" color="secondary">
                           <MoreOutlined />
                         </IconButton>

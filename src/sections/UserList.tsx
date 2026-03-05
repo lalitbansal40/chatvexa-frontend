@@ -1,5 +1,5 @@
-import { Fragment, useEffect, useState } from 'react';
-
+import { Fragment, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 // material-ui
 import { useTheme } from '@mui/material/styles';
 import { Divider, List, ListItemAvatar, ListItemButton, ListItemText, Stack, Typography } from '@mui/material';
@@ -10,15 +10,15 @@ import { Chance } from 'chance';
 // project imports
 import UserAvatar from './UserAvatar';
 import Dot from 'components/@extended/Dot';
-import { useDispatch, useSelector } from 'store';
+import { useDispatch } from 'store';
 import { getUsers } from 'store/reducers/chat';
 
 // assets
 import { CheckOutlined } from '@ant-design/icons';
 
 // types
-import { KeyedObject } from 'types/root';
 import { UserProfile } from 'types/user-profile';
+import { contactService } from 'service/contact.service';
 
 const chance = new Chance();
 
@@ -30,48 +30,51 @@ interface UserListProps {
 function UserList({ setUser, search }: UserListProps) {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const [data, setData] = useState<UserProfile[]>([]);
-  const { users } = useSelector((state:any) => state.chat);
+  // const [data, setData] = useState<UserProfile[]>([]);
+  // const { users } = useSelector((state:any) => state.chat);
+
+const { data } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: () => contactService.getContacts()
+  });
 
   useEffect(() => {
     dispatch(getUsers());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    setData(users);
-  }, [users]);
 
-  useEffect(() => {
-    if (search) {
-      const results = users.filter((row: KeyedObject) => {
-        let matches = true;
 
-        const properties: string[] = ['name'];
-        let containsQuery = false;
+  // useEffect(() => {
+  //   if (search) {
+  //     const results = data.filter((row: KeyedObject) => {
+  //       let matches = true;
 
-        properties.forEach((property) => {
-          if (row[property].toString().toLowerCase().includes(search.toString().toLowerCase())) {
-            containsQuery = true;
-          }
-        });
+  //       const properties: string[] = ['name'];
+  //       let containsQuery = false;
 
-        if (!containsQuery) {
-          matches = false;
-        }
-        return matches;
-      });
+  //       properties.forEach((property) => {
+  //         if (row[property].toString().toLowerCase().includes(search.toString().toLowerCase())) {
+  //           containsQuery = true;
+  //         }
+  //       });
 
-      setData(results);
-    } else {
-      setData(users);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  //       if (!containsQuery) {
+  //         matches = false;
+  //       }
+  //       return matches;
+  //     });
+
+  //     setData(results);
+  //   } else {
+  //     setData(users);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [search]);
 
   return (
     <List component="nav">
-      {data.map((user) => (
+      {data.map((user:any) => (
         <Fragment key={user.id}>
           <ListItemButton
             sx={{ pl: 1 }}
