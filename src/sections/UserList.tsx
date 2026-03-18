@@ -1,5 +1,4 @@
 import { Fragment, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 // import { Badge } from "@mui/material";
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -24,21 +23,14 @@ const chance = new Chance();
 
 interface UserListProps {
   setUser: (u: UserProfile) => void;
-  search?: string;
-  channelId: string;
+  data: any;
+  isLoading: boolean;
+  refetch: () => void;
 }
 
-function UserList({ setUser, search, channelId }: UserListProps) {
+function UserList({ setUser, data, isLoading, refetch }: UserListProps) {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['contacts', search, channelId],
-    queryFn: async () => {
-      const res = await contactService.getContacts(channelId, search);
-      return res.data;
-    },
-    placeholderData: (previousData) => previousData
-  });
 
   useEffect(() => {
     dispatch(getUsers());

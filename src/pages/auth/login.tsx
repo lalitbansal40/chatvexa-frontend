@@ -26,7 +26,7 @@ const Login = () => {
               sx={{ textDecoration: 'none' }}
               color="primary"
             >
-              Don&apos;t have an account?
+              {/* Don&apos;t have an account? */}
             </Typography>
           </Stack>
         </Grid>

@@ -6,7 +6,7 @@ import Locales from 'components/Locales';
 import ScrollTop from 'components/ScrollTop';
 import Snackbar from 'components/@extended/Snackbar';
 import Notistack from 'components/third-party/Notistack';
-
+import 'react-phone-input-2/lib/style.css';
 // auth-provider
 import { JWTProvider as AuthProvider } from 'contexts/JWTContext';
 

@@ -9,8 +9,10 @@ import {
   OutlinedInput,
   Stack,
   Typography,
-  useMediaQuery
+  useMediaQuery,
+  Button
 } from '@mui/material';
+
 import { Autocomplete, TextField } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { channelService } from 'service/channel.service';
@@ -27,6 +29,8 @@ import {
 // types
 import { UserProfile } from 'types/user-profile';
 import { ThemeMode } from 'types/config';
+import { CreateContactModal } from 'components/chat/CreateContactModel';
+import { contactService } from 'service/contact.service';
 
 // ==============================|| CHAT DRAWER ||============================== //
 
@@ -40,6 +44,8 @@ function ChatDrawer({ handleDrawerOpen, openChatDrawer, setUser }: ChatDrawerPro
   const theme = useTheme();
   const matchDownLG = useMediaQuery(theme.breakpoints.down('lg'));
   const drawerBG = theme.palette.mode === ThemeMode.DARK ? 'dark.main' : 'white';
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+
 
 
   const [search, setSearch] = useState<string | undefined>('');
@@ -51,12 +57,24 @@ function ChatDrawer({ handleDrawerOpen, openChatDrawer, setUser }: ChatDrawerPro
     queryFn: () => channelService.getChannels()
   });
 
+  const { data: contactData, isLoading: contactLoading, refetch: contactRefetch } = useQuery({
+    queryKey: ['contacts', debouncedSearch, channelId],
+    queryFn: async () => {
+      const res = await contactService.getContacts(channelId, debouncedSearch);
+      return res.data;
+    },
+    placeholderData: (previousData) => previousData
+  });
+
   const channels = data?.data || [];
 
   const handleSearch = async (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | undefined) => {
     const newString = event?.target.value;
     setSearch(newString);
   };
+
+  const handleOpen = () => setContactModalOpen(true);
+  const handleClose = () => setContactModalOpen(false);
 
 
   useEffect(() => {
@@ -128,6 +146,20 @@ function ChatDrawer({ handleDrawerOpen, openChatDrawer, setUser }: ChatDrawerPro
                 )}
               />
 
+              <Button
+                variant="contained"
+                onClick={handleOpen}
+                fullWidth
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  boxShadow: 2
+                }}
+              >
+                + Add New Contact
+              </Button>
+
               {/* SEARCH */}
               <OutlinedInput
                 fullWidth
@@ -153,10 +185,12 @@ function ChatDrawer({ handleDrawerOpen, openChatDrawer, setUser }: ChatDrawerPro
           }}
         >
           <Box sx={{ p: 3, pt: 0 }}>
-            <UserList setUser={setUser} search={debouncedSearch} channelId={channelId} />
+            <UserList setUser={setUser} data={contactData} isLoading={contactLoading} refetch={contactRefetch} />
           </Box>
         </SimpleBar>
       </MainCard>
+      {contactModalOpen && <CreateContactModal contactCreateRefresh={contactRefetch} contactModalOpen={contactModalOpen} handleClose={handleClose} channelId={channelId} />}
+
     </Drawer>
   );
 }

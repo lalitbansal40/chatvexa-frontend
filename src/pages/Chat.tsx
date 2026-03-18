@@ -4,13 +4,13 @@ import { CircularProgress } from '@mui/material';
 import { useTheme, styled, Theme } from '@mui/material/styles';
 import {
   Box,
-  // ClickAwayListener,
+  ClickAwayListener,
   Collapse,
   Dialog,
   Grid,
   Menu,
   MenuItem,
-  // Popper,
+  Popper,
   Stack,
   TextField,
   Typography,
@@ -18,12 +18,12 @@ import {
 } from '@mui/material';
 
 // third party
-// import
-// EmojiPicker,
-// {
-// SkinTones,
-// EmojiClickData
-// } from 'emoji-picker-react';
+import
+EmojiPicker,
+{
+  SkinTones,
+  EmojiClickData
+} from 'emoji-picker-react';
 
 // project import
 import ChatDrawer from 'sections/ChatDrawer';
@@ -32,7 +32,7 @@ import UserAvatar from 'sections/UserAvatar';
 import UserDetails from 'sections/UserDetails';
 
 import MainCard from 'components/MainCard';
-// import IconButton from 'components/@extended/IconButton';
+import IconButton from 'components/@extended/IconButton';
 import SimpleBar from 'components/third-party/SimpleBar';
 import { PopupTransition } from 'components/@extended/Transitions';
 
@@ -50,7 +50,7 @@ import {
   // PaperClipOutlined,
   // PictureOutlined,
   // SendOutlined,
-  // SmileOutlined,
+  SmileOutlined,
   // SoundOutlined
 } from '@ant-design/icons';
 
@@ -116,11 +116,11 @@ const Chat = () => {
     setOpenChatDrawer((prevState) => !prevState);
   };
 
-  // const [anchorElEmoji, setAnchorElEmoji] = useState<any>(); /** No single type can cater for all elements */
+  const [anchorElEmoji, setAnchorElEmoji] = useState<any>(); /** No single type can cater for all elements */
 
-  // const handleOnEmojiButtonClick = (event: React.MouseEvent<HTMLButtonElement> | undefined) => {
-  //   setAnchorElEmoji(anchorElEmoji ? null : event?.currentTarget);
-  // };
+  const handleOnEmojiButtonClick = (event: React.MouseEvent<HTMLButtonElement> | undefined) => {
+    setAnchorElEmoji(anchorElEmoji ? null : event?.currentTarget);
+  };
 
   // handle new message form
   const [message, setMessage] = useState('');
@@ -197,16 +197,16 @@ const Chat = () => {
 
 
   // handle emoji
-  // const onEmojiClick = (emojiObject: EmojiClickData, event: MouseEvent) => {
-  //   setMessage(message + emojiObject.emoji);
-  // };
+  const onEmojiClick = (emojiObject: EmojiClickData, event: MouseEvent) => {
+    setMessage(message + emojiObject.emoji);
+  };
 
-  // const emojiOpen = Boolean(anchorElEmoji);
-  // const emojiId = emojiOpen ? 'simple-popper' : undefined;
+  const emojiOpen = Boolean(anchorElEmoji);
+  const emojiId = emojiOpen ? 'simple-popper' : undefined;
 
-  // const handleCloseEmoji = () => {
-  //   setAnchorElEmoji(null);
-  // };
+  const handleCloseEmoji = () => {
+    setAnchorElEmoji(null);
+  };
 
   // close sidebar when widow size below 'md' breakpoint
   useEffect(() => {
@@ -404,7 +404,6 @@ const Chat = () => {
                   </SimpleBar>
                 </Grid>
                 <Grid item xs={12} sx={{ mt: 3, bgcolor: theme.palette.background.paper, borderTop: `1px solid ${theme.palette.divider}` }}>
-                  <Stack>
                     <TextField
                       inputRef={textInput}
                       fullWidth
@@ -421,22 +420,11 @@ const Chat = () => {
                       }}
                       variant="standard"
                       sx={{
-                        "& .MuiInput-underline:before": {
-                          borderBottom: "none"
-                        },
-                        "& .MuiInput-underline:after": {
-                          borderBottom: "none"
-                        },
-                        "& .MuiInput-underline:hover:not(.Mui-disabled):before": {
-                          borderBottom: "none"
-                        }
+                        pr: 2,
+                        '& .MuiInput-root:before': { borderBottomColor: theme.palette.divider }
                       }}
-                    // sx={{
-                    //   pr: 2,
-                    //   '& .MuiInput-root:before': { borderBottomColor: theme.palette.divider }
-                    // }}
                     />
-                    {/* <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
                       <Stack direction="row" sx={{ py: 2, ml: -1 }}>
                         <>
                           <IconButton
@@ -473,7 +461,7 @@ const Chat = () => {
                             </ClickAwayListener>
                           </Popper>
                         </>
-                        <IconButton sx={{ opacity: 0.5 }} size="medium" color="secondary">
+                        {/* <IconButton sx={{ opacity: 0.5 }} size="medium" color="secondary">
                           <PaperClipOutlined />
                         </IconButton>
                         <IconButton sx={{ opacity: 0.5 }} size="medium" color="secondary">
@@ -485,9 +473,9 @@ const Chat = () => {
                       </Stack>
                       <IconButton color="primary" onClick={handleOnSend} size="large" sx={{ mr: 1.5 }}>
                         <SendOutlined />
-                      </IconButton>
-                    </Stack> */}
-                  </Stack>
+                      </IconButton> */}
+                      </Stack>
+                    </Stack>
                 </Grid>
               </Grid>
             </MainCard>
