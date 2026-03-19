@@ -11,12 +11,36 @@ class ContactService {
     return response.data;
   }
 
-  async createContact(channelId: string, name: string, phone: string) {
+  async getContactById(contactId: string) {
+    const response = await axiosServices.get(`contact/details/${contactId}`);
+    return response.data;
+  }
+
+  async createContact(
+    channelId: string,
+    name: string,
+    phone: string,
+    attributes?: Record<string, any>,
+  ) {
     const response = await axiosServices.post(`contact/${channelId}`, {
       name,
       phone,
+      attributes, // ✅ now supported
     });
 
+    return response.data;
+  }
+
+  // 🔥 UPDATE CONTACT
+  async updateContact(
+    contactId: string,
+    payload: {
+      name?: string;
+      phone?: string;
+      attributes?: Record<string, any>;
+    },
+  ) {
+    const response = await axiosServices.patch(`contact/${contactId}`, payload);
     return response.data;
   }
 

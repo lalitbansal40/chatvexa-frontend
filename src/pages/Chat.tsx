@@ -24,7 +24,7 @@ EmojiPicker,
   SkinTones,
   EmojiClickData
 } from 'emoji-picker-react';
-
+import { useSearchParams } from 'react-router-dom';
 // project import
 import ChatDrawer from 'sections/ChatDrawer';
 import ChatHistory from 'sections/ChatHistory';
@@ -46,6 +46,7 @@ import {
   AudioMutedOutlined,
   DeleteOutlined,
   DownloadOutlined,
+  EditOutlined,
   // MoreOutlined,
   // PaperClipOutlined,
   // PictureOutlined,
@@ -59,6 +60,7 @@ import { History as HistoryProps } from 'types/chat';
 import { UserProfile } from 'types/user-profile';
 import { ThemeMode } from 'types/config';
 import { messageService } from 'service/message.service';
+import { CreateContactModal } from 'components/chat/CreateContactModel';
 
 const drawerWidth = 320;
 
@@ -94,6 +96,12 @@ const Chat = () => {
   const matchDownMD = useMediaQuery(theme.breakpoints.down('md'));
   const [emailDetails, setEmailDetails] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [searchParams] = useSearchParams();
+  const contactIdFromUrl = searchParams.get('contactId');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const handleEditOpen = () => setEditModalOpen(true);
+  const handleEditClose = () => setEditModalOpen(false);
 
   const [data, setData] = useState<HistoryProps[]>([]);
   const chatState = useSelector((state: any) => state?.chat || {});
@@ -239,17 +247,24 @@ const Chat = () => {
   }, [user?.name]);
 
   useEffect(() => {
+    if (!user?._id) return;
+
+    setData([]);
+    setCursor(null);
+  }, [user?._id]);
+
+  useEffect(() => {
+    if (!user?._id) return;
+
     const fetchMessages = async () => {
-      const res = await messageService.getMessages(user?._id || '');
+      const res = await messageService.getMessages(user._id as string);
 
       setData(res.data);
       setCursor(res.nextCursor || null);
     };
 
-    if (user?._id) {
-      fetchMessages();
-    }
-  }, [user]);
+    fetchMessages();
+  }, [user?._id]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -276,7 +291,7 @@ const Chat = () => {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <ChatDrawer openChatDrawer={openChatDrawer} handleDrawerOpen={handleDrawerOpen} setUser={setUser} />
+      <ChatDrawer openChatDrawer={openChatDrawer} handleDrawerOpen={handleDrawerOpen} setUser={setUser} selectedUserId={contactIdFromUrl} />
       <Main theme={theme} open={openChatDrawer}>
         <Grid container>
           <Grid
@@ -310,65 +325,97 @@ const Chat = () => {
                   xs={12}
                   sx={{ bgcolor: theme.palette.background.paper, pr: 2, pb: 2, borderBottom: `1px solid ${theme.palette.divider}` }}
                 >
-                  <Grid container justifyContent="space-between">
-                    <Grid item>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <UserAvatar
-                          user={{
-                            online_status: user?.online_status,
-                            avatar: user?.avatar,
-                            name: user?.name
-                          }}
-                        />
-                        <Stack>
-                          <Typography variant="subtitle1">{user?.name}</Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            {user?.phone}
-                          </Typography>
-                        </Stack>
+                  <Grid container alignItems="center" sx={{ width: '100%' }}>
+
+                    {/* LEFT */}
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <UserAvatar
+                        user={{
+                          online_status: user?.online_status,
+                          avatar: user?.avatar,
+                          name: user?.name
+                        }}
+                      />
+
+                      <Stack>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          {user?.name}
+                        </Typography>
+
+                        <Typography variant="caption" color="textSecondary">
+                          {user?.phone}
+                        </Typography>
                       </Stack>
-                    </Grid>
-                    <Grid item>
-                      <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={1}>
-                        {/* <IconButton onClick={handleClickSort} size="large" color="secondary">
+                    </Stack>
+
+                    {/* RIGHT ICON */}
+                    <Box
+                      onClick={() => {
+                        if (!user?._id) return;
+                        handleEditOpen();
+                      }}
+
+                      sx={{
+                        marginLeft: 'auto', // 🔥 THIS IS KEY
+                        cursor: 'pointer',
+                        p: 1,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0.6,
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          opacity: 1,
+                          backgroundColor: 'rgba(0,0,0,0.05)',
+                          transform: 'scale(1.1)'
+                        }
+                      }}
+                    >
+                      <EditOutlined style={{ fontSize: 18 }} />
+                    </Box>
+
+                  </Grid>
+                  <Grid item>
+                    <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={1}>
+                      {/* <IconButton onClick={handleClickSort} size="large" color="secondary">
                           <MoreOutlined />
                         </IconButton> */}
-                        <Menu
-                          id="simple-menu"
-                          //   anchorEl={anchorEl}
-                          keepMounted
-                          open={Boolean(anchorEl)}
-                          onClose={handleCloseSort}
-                          anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'right'
-                          }}
-                          transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right'
-                          }}
-                          sx={{
-                            p: 0,
-                            '& .MuiMenu-list': {
-                              p: 0
-                            }
-                          }}
-                        >
-                          <MenuItem onClick={handleCloseSort}>
-                            <DownloadOutlined style={{ paddingRight: 8 }} />
-                            <Typography>Archive</Typography>
-                          </MenuItem>
-                          <MenuItem onClick={handleCloseSort}>
-                            <AudioMutedOutlined style={{ paddingRight: 8 }} />
-                            <Typography>Muted</Typography>
-                          </MenuItem>
-                          <MenuItem onClick={handleCloseSort}>
-                            <DeleteOutlined style={{ paddingRight: 8 }} />
-                            <Typography>Delete</Typography>
-                          </MenuItem>
-                        </Menu>
-                      </Stack>
-                    </Grid>
+                      <Menu
+                        id="simple-menu"
+                        //   anchorEl={anchorEl}
+                        keepMounted
+                        open={Boolean(anchorEl)}
+                        onClose={handleCloseSort}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'right'
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'right'
+                        }}
+                        sx={{
+                          p: 0,
+                          '& .MuiMenu-list': {
+                            p: 0
+                          }
+                        }}
+                      >
+                        <MenuItem onClick={handleCloseSort}>
+                          <DownloadOutlined style={{ paddingRight: 8 }} />
+                          <Typography>Archive</Typography>
+                        </MenuItem>
+                        <MenuItem onClick={handleCloseSort}>
+                          <AudioMutedOutlined style={{ paddingRight: 8 }} />
+                          <Typography>Muted</Typography>
+                        </MenuItem>
+                        <MenuItem onClick={handleCloseSort}>
+                          <DeleteOutlined style={{ paddingRight: 8 }} />
+                          <Typography>Delete</Typography>
+                        </MenuItem>
+                      </Menu>
+                    </Stack>
                   </Grid>
                 </Grid>
                 <Grid item xs={12}>
@@ -404,64 +451,64 @@ const Chat = () => {
                   </SimpleBar>
                 </Grid>
                 <Grid item xs={12} sx={{ mt: 3, bgcolor: theme.palette.background.paper, borderTop: `1px solid ${theme.palette.divider}` }}>
-                    <TextField
-                      inputRef={textInput}
-                      fullWidth
-                      multiline
-                      rows={4}
-                      placeholder="Your Message..."
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value.length <= 1 ? e.target.value.trim() : e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleOnSend();
-                        }
-                      }}
-                      variant="standard"
-                      sx={{
-                        pr: 2,
-                        '& .MuiInput-root:before': { borderBottomColor: theme.palette.divider }
-                      }}
-                    />
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Stack direction="row" sx={{ py: 2, ml: -1 }}>
-                        <>
-                          <IconButton
-                            ref={anchorElEmoji}
-                            aria-describedby={emojiId}
-                            onClick={handleOnEmojiButtonClick}
-                            sx={{ opacity: 0.5 }}
-                            size="medium"
-                            color="secondary"
-                          >
-                            <SmileOutlined />
-                          </IconButton>
-                          <Popper
-                            id={emojiId}
-                            open={emojiOpen}
-                            anchorEl={anchorElEmoji}
-                            disablePortal
-                            style={{ zIndex: 1200 }}
-                            popperOptions={{
-                              modifiers: [
-                                {
-                                  name: 'offset',
-                                  options: {
-                                    offset: [-20, 125]
-                                  }
+                  <TextField
+                    inputRef={textInput}
+                    fullWidth
+                    multiline
+                    rows={4}
+                    placeholder="Your Message..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value.length <= 1 ? e.target.value.trim() : e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleOnSend();
+                      }
+                    }}
+                    variant="standard"
+                    sx={{
+                      pr: 2,
+                      '& .MuiInput-root:before': { borderBottomColor: theme.palette.divider }
+                    }}
+                  />
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction="row" sx={{ py: 2, ml: -1 }}>
+                      <>
+                        <IconButton
+                          ref={anchorElEmoji}
+                          aria-describedby={emojiId}
+                          onClick={handleOnEmojiButtonClick}
+                          sx={{ opacity: 0.5 }}
+                          size="medium"
+                          color="secondary"
+                        >
+                          <SmileOutlined />
+                        </IconButton>
+                        <Popper
+                          id={emojiId}
+                          open={emojiOpen}
+                          anchorEl={anchorElEmoji}
+                          disablePortal
+                          style={{ zIndex: 1200 }}
+                          popperOptions={{
+                            modifiers: [
+                              {
+                                name: 'offset',
+                                options: {
+                                  offset: [-20, 125]
                                 }
-                              ]
-                            }}
-                          >
-                            <ClickAwayListener onClickAway={handleCloseEmoji}>
-                              <MainCard elevation={8} content={false}>
-                                <EmojiPicker onEmojiClick={onEmojiClick} defaultSkinTone={SkinTones.DARK} autoFocusSearch={false} />
-                              </MainCard>
-                            </ClickAwayListener>
-                          </Popper>
-                        </>
-                        {/* <IconButton sx={{ opacity: 0.5 }} size="medium" color="secondary">
+                              }
+                            ]
+                          }}
+                        >
+                          <ClickAwayListener onClickAway={handleCloseEmoji}>
+                            <MainCard elevation={8} content={false}>
+                              <EmojiPicker onEmojiClick={onEmojiClick} defaultSkinTone={SkinTones.DARK} autoFocusSearch={false} />
+                            </MainCard>
+                          </ClickAwayListener>
+                        </Popper>
+                      </>
+                      {/* <IconButton sx={{ opacity: 0.5 }} size="medium" color="secondary">
                           <PaperClipOutlined />
                         </IconButton>
                         <IconButton sx={{ opacity: 0.5 }} size="medium" color="secondary">
@@ -474,8 +521,8 @@ const Chat = () => {
                       <IconButton color="primary" onClick={handleOnSend} size="large" sx={{ mr: 1.5 }}>
                         <SendOutlined />
                       </IconButton> */}
-                      </Stack>
                     </Stack>
+                  </Stack>
                 </Grid>
               </Grid>
             </MainCard>
@@ -491,6 +538,15 @@ const Chat = () => {
           </Dialog>
         </Grid>
       </Main>
+      {editModalOpen && user?._id && (
+        <CreateContactModal
+          contactModalOpen={editModalOpen}
+          handleClose={handleEditClose}
+          channelId={user.channel_id as string}
+          contactCreateRefresh={() => { }}
+          contactId={user._id} // 🔥 THIS IS EDIT MODE
+        />
+      )}
     </Box>
   );
 };

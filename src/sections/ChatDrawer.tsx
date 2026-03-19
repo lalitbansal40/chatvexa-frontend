@@ -38,9 +38,10 @@ interface ChatDrawerProps {
   handleDrawerOpen: () => void;
   openChatDrawer: boolean | undefined;
   setUser: (u: UserProfile) => void;
+  selectedUserId?: string | null; // ✅ ADD
 }
 
-function ChatDrawer({ handleDrawerOpen, openChatDrawer, setUser }: ChatDrawerProps) {
+function ChatDrawer({ handleDrawerOpen, openChatDrawer, setUser, selectedUserId }: ChatDrawerProps) {
   const theme = useTheme();
   const matchDownLG = useMediaQuery(theme.breakpoints.down('lg'));
   const drawerBG = theme.palette.mode === ThemeMode.DARK ? 'dark.main' : 'white';
@@ -91,6 +92,20 @@ function ChatDrawer({ handleDrawerOpen, openChatDrawer, setUser }: ChatDrawerPro
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channels]);
+
+  useEffect(() => {
+    if (!selectedUserId || !contactData?.length) return;
+
+    const selected = contactData.find(
+      (c: any) => c._id === selectedUserId
+    );
+
+    if (selected) {
+      setUser(selected);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUserId, contactData]);
+
   return (
     <Drawer
       sx={{
@@ -185,7 +200,7 @@ function ChatDrawer({ handleDrawerOpen, openChatDrawer, setUser }: ChatDrawerPro
           }}
         >
           <Box sx={{ p: 3, pt: 0 }}>
-            <UserList setUser={setUser} data={contactData} isLoading={contactLoading} refetch={contactRefetch} />
+            <UserList setUser={setUser} data={contactData} isLoading={contactLoading} refetch={contactRefetch} selectedUserId={selectedUserId || undefined} />
           </Box>
         </SimpleBar>
       </MainCard>

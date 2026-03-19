@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // material-ui
 import {
@@ -14,6 +14,7 @@ import {
 // project import
 import MainCard from 'components/MainCard';
 import { contactService } from 'service/contact.service';
+import { contactAttributeService } from 'service/contactAttribute.service';
 
 // phone input
 import PhoneInput from 'react-phone-input-2';
@@ -28,45 +29,155 @@ interface CreateContactModalProps {
   handleClose: () => void;
   channelId: string;
   contactCreateRefresh: () => void;
+  contactId?: string;
 }
 
 export const CreateContactModal = ({
   contactModalOpen,
   handleClose,
   channelId,
-  contactCreateRefresh
+  contactCreateRefresh,
+  contactId
 }: CreateContactModalProps) => {
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [attributes, setAttributes] = useState<any[]>([]);
 
+  const isEdit = Boolean(contactId);
+
+  // ================= FORM =================
   const formik = useFormik({
     initialValues: {
       fullName: '',
-      phone: ''
+      phone: '',
+      attributes: {} as Record<string, any>
     },
     validationSchema: Yup.object({
       fullName: Yup.string().required('Full Name is required'),
       phone: Yup.string().required('Phone is required')
     }),
-    validateOnMount: true, // 🔥 important for initial disable
+    validateOnMount: true,
     onSubmit: async (values, { resetForm }) => {
       try {
         setLoading(true);
 
         const finalPhone = `+${values.phone}`;
 
-        await contactService.createContact(channelId, values.fullName, finalPhone);
+        if (isEdit && contactId) {
+          await contactService.updateContact(contactId, {
+            name: values.fullName,
+            phone: finalPhone,
+            attributes: values.attributes // 🔥 important
+          });
+        } else {
+          await contactService.createContact(channelId, values.fullName, finalPhone, values.attributes);
+        }
 
         resetForm();
         handleClose();
         contactCreateRefresh();
       } catch (error) {
         console.error(error);
-        alert('Failed to create contact');
+        alert('Failed to save contact');
       } finally {
         setLoading(false);
       }
     }
   });
+
+  const parseValue = (value: any) => {
+    if (typeof value === 'object') {
+      return JSON.stringify(value, null, 2);
+    }
+    return value || '';
+  };
+
+  const handleAttributeChange = (key: string, value: string) => {
+    let finalValue: any = value;
+
+    try {
+      // try JSON parse
+      if (value.startsWith('{') || value.startsWith('[')) {
+        finalValue = JSON.parse(value);
+      }
+    } catch {
+      // keep as string
+    }
+
+    formik.setFieldValue(`attributes.${key}`, finalValue);
+  };
+
+  // ================= FETCH ATTRIBUTE DEFINITIONS =================
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        const res = await contactAttributeService.getAttributes();
+        setAttributes(res.data || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    if (contactModalOpen) {
+      fetchAttributes();
+    }
+  }, [contactModalOpen]);
+
+  // ================= INIT EMPTY ATTRIBUTES (CREATE MODE) =================
+  useEffect(() => {
+    if (!attributes.length || isEdit) return;
+
+    const initialAttr: Record<string, any> = {};
+
+    attributes.forEach((attr) => {
+      initialAttr[attr.id] = '';
+    });
+
+    formik.setFieldValue('attributes', initialAttr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attributes, isEdit]);
+
+  // ================= FETCH CONTACT (EDIT MODE) =================
+  useEffect(() => {
+    const fetchContact = async () => {
+      if (!contactId) return;
+
+      try {
+        setFetching(true);
+
+        const res = await contactService.getContactById(contactId);
+        const contact = res.data;
+
+        formik.setValues({
+          fullName: contact.name || '',
+          phone: contact.phone?.replace('+', '') || '',
+          attributes: contact.attributes || {}
+        });
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    if (contactModalOpen && contactId) {
+      fetchContact();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contactId, contactModalOpen]);
+
+  useEffect(() => {
+    if (!attributes.length || !isEdit) return;
+
+    const merged: Record<string, any> = {};
+
+    attributes.forEach((attr) => {
+      merged[attr.id] = formik.values.attributes?.[attr.id] ?? '';
+    });
+
+    formik.setFieldValue('attributes', merged);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attributes]);
 
   return (
     <Modal open={contactModalOpen} onClose={handleClose}>
@@ -76,20 +187,18 @@ export const CreateContactModal = ({
           justifyContent: 'center',
           alignItems: 'center',
           height: '100%',
-          p: 2,
-          overflow: 'visible'
+          p: 2
         }}
       >
         <MainCard
-          title="Add New Contact"
+          title={isEdit ? 'Edit Contact' : 'Add New Contact'}
           modal
           darkTitle
           content={false}
           sx={{
             width: { xs: '95%', sm: 600 },
             borderRadius: 3,
-            boxShadow: 10,
-            overflow: 'visible'
+            boxShadow: 10
           }}
         >
           <form onSubmit={formik.handleSubmit}>
@@ -103,36 +212,26 @@ export const CreateContactModal = ({
                   name="fullName"
                   value={formik.values.fullName}
                   onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
                   error={formik.touched.fullName && Boolean(formik.errors.fullName)}
                   helperText={formik.touched.fullName && formik.errors.fullName}
-                  sx={{
-                    '& .MuiInputBase-root': {
-                      height: 50
-                    }
-                  }}
+                  disabled={fetching}
                 />
 
-                {/* PHONE INPUT */}
+                {/* PHONE */}
                 <Box
                   sx={{
+                    width: '100%', // 🔥 important
                     '& .react-tel-input': {
                       width: '100%'
                     },
                     '& .react-tel-input .form-control': {
-                      width: '100% !important',
+                      width: '100% !important', // 🔥 force full width
                       height: '56px !important',
                       borderRadius: '12px !important',
                       fontSize: '16px !important'
                     },
-                    '& .react-tel-input .country-list': {
-                      zIndex: 9999,
-                      borderRadius: '12px',
-                      maxHeight: '300px'
-                    },
-                    '& .react-tel-input .search-box': {
-                      height: '40px',
-                      borderRadius: '8px'
+                    '& .react-tel-input .flag-dropdown': {
+                      borderRadius: '12px 0 0 12px'
                     }
                   }}
                 >
@@ -141,30 +240,40 @@ export const CreateContactModal = ({
                     enableSearch
                     value={formik.values.phone}
                     onChange={(value) => formik.setFieldValue('phone', value)}
-                    dropdownStyle={{
-                      zIndex: 9999
+                    disabled={fetching}
+                    inputStyle={{
+                      width: '100%' // 🔥 extra safety
                     }}
                   />
                 </Box>
 
-                {/* PHONE ERROR */}
-                {formik.touched.phone && formik.errors.phone && (
-                  <span style={{ color: 'red', fontSize: 12 }}>
-                    {formik.errors.phone}
-                  </span>
-                )}
+                {/* 🔥 DYNAMIC ATTRIBUTES */}
+                {attributes.map((attr) => {
+                  const value = formik.values.attributes?.[attr.id];
+
+                  const isObject = typeof value === 'object';
+
+                  return (
+                    <TextField
+                      key={attr.id}
+                      label={attr.name}
+                      fullWidth
+                      multiline={isObject} // 🔥 object → textarea
+                      minRows={isObject ? 4 : 1}
+                      value={parseValue(value)}
+                      onChange={(e) =>
+                        handleAttributeChange(attr.id, e.target.value)
+                      }
+                    />
+                  );
+                })}
 
               </Stack>
             </CardContent>
 
             <Divider />
 
-            <Stack
-              direction="row"
-              spacing={2}
-              justifyContent="flex-end"
-              sx={{ px: 2.5, py: 2 }}
-            >
+            <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ px: 2.5, py: 2 }}>
               <Button color="error" size="small" onClick={handleClose}>
                 Cancel
               </Button>
@@ -175,12 +284,19 @@ export const CreateContactModal = ({
                 size="small"
                 disabled={
                   loading ||
+                  fetching ||
                   !formik.values.fullName ||
                   !formik.values.phone ||
                   !formik.isValid
                 }
               >
-                {loading ? 'Creating...' : 'Submit'}
+                {loading
+                  ? isEdit
+                    ? 'Updating...'
+                    : 'Creating...'
+                  : isEdit
+                    ? 'Update'
+                    : 'Submit'}
               </Button>
             </Stack>
           </form>

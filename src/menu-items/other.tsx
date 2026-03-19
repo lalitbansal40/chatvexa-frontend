@@ -2,7 +2,7 @@
 import { FormattedMessage } from 'react-intl';
 
 // assets
-import { ChromeOutlined, QuestionOutlined, DeploymentUnitOutlined } from '@ant-design/icons';
+import { ChromeOutlined, QuestionOutlined, DeploymentUnitOutlined, MessageOutlined } from '@ant-design/icons';
 
 // type
 import { NavItemType } from 'types/menu';
@@ -11,14 +11,15 @@ import { NavItemType } from 'types/menu';
 const icons = {
   ChromeOutlined,
   QuestionOutlined,
-  DeploymentUnitOutlined
+  DeploymentUnitOutlined,
+  MessageOutlined
 };
 
 // ==============================|| MENU ITEMS - SUPPORT ||============================== //
 
 const other: NavItemType = {
-  id: 'AdminTools',
-  title: <FormattedMessage id="AdminTools" />,
+  id: 'Workspace',
+  title: <FormattedMessage id="Workspace" />,
   type: 'group',
   children: [
     {
@@ -26,7 +27,7 @@ const other: NavItemType = {
       title: <FormattedMessage id="Chats" />,
       type: 'item',
       url: '/chats',
-      icon: icons.ChromeOutlined
+      icon: icons.MessageOutlined
     }
   ]
 };

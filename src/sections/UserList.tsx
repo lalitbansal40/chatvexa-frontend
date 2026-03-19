@@ -4,6 +4,8 @@ import { Fragment, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { Divider, List, ListItemAvatar, ListItemButton, ListItemText, Stack, Typography } from '@mui/material';
 import { CircularProgress, Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
 // third-party
 import { Chance } from 'chance';
 
@@ -26,11 +28,13 @@ interface UserListProps {
   data: any;
   isLoading: boolean;
   refetch: () => void;
+  selectedUserId?: string;
 }
 
-function UserList({ setUser, data, isLoading, refetch }: UserListProps) {
+function UserList({ setUser, data, isLoading, refetch,selectedUserId }: UserListProps) {
   const theme = useTheme();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(getUsers());
@@ -60,8 +64,12 @@ function UserList({ setUser, data, isLoading, refetch }: UserListProps) {
           <Fragment key={user._id}>
             <ListItemButton
               sx={{ pl: 1 }}
+              selected={selectedUserId === user._id}
               onClick={async () => {
-                setUser(user);
+                // setUser(user);
+
+                // 🔥 URL update
+                navigate(`?contactId=${user._id}`);
 
                 if (user.unread_count > 0) {
                   await contactService.markAsRead(user._id);
