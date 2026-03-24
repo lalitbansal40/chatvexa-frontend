@@ -30,6 +30,7 @@ interface Props {
 const TemplateModal = ({ open, onClose, onSubmit, initialData }: Props) => {
     const { id: channelId } = useParams();
     const [buttons, setButtons] = useState<any[]>([]);
+    const [bodyExamples, setBodyExamples] = useState<string[]>([]);
     type Category = "UTILITY" | "MARKETING" | "AUTHENTICATION";
     const quickReplyCount = buttons.filter(b => b.type === "QUICK_REPLY").length;
     const ctaCount = buttons.filter(b => b.type !== "QUICK_REPLY").length;
@@ -141,16 +142,36 @@ const TemplateModal = ({ open, onClose, onSubmit, initialData }: Props) => {
                 components.push(headerComponent);
             }
 
+            const variables = getVariables();
+
+            if (variables.length > 0) {
+                const hasEmpty = bodyExamples.some((v) => !v);
+
+                if (hasEmpty) {
+                    alert("Please fill all example values");
+                    return;
+                }
+            }
+
             // ✅ BODY
             if (!form.body) {
                 alert("Body is required");
                 return;
             }
 
-            components.push({
+
+            let bodyComponent: any = {
                 type: "BODY",
                 text: form.body,
-            });
+            };
+
+            if (variables.length > 0) {
+                bodyComponent.example = {
+                    body_text: [bodyExamples],
+                };
+            }
+
+            components.push(bodyComponent);
 
             // ✅ NAME FORMAT FIX (Meta requirement)
             const formattedName = form.name
@@ -167,18 +188,10 @@ const TemplateModal = ({ open, onClose, onSubmit, initialData }: Props) => {
             console.log("FINAL PAYLOAD:", payload);
 
             // ✅ WAIT FOR API RESPONSE
-            const res: any = await onSubmit(payload);
+            await onSubmit(payload);
 
             // ✅ SUCCESS → CLOSE
-            if (res?.success) {
-                onClose();
-            } else {
-                alert(
-                    res?.message?.error_user_msg ||
-                    res?.message ||
-                    "Failed to create template"
-                );
-            }
+            onClose();
 
         } catch (err: any) {
             console.error("Submit error:", err);
@@ -221,21 +234,64 @@ const TemplateModal = ({ open, onClose, onSubmit, initialData }: Props) => {
 
     useEffect(() => {
         if (templateData) {
+            const bodyComp = templateData.components?.find((c: any) => c.type === "BODY");
+            const headerComp = templateData.components?.find((c: any) => c.type === "HEADER");
+            const buttonsComp = templateData.components?.find((c: any) => c.type === "BUTTONS");
+
+            // ✅ BODY EXAMPLES
+            if (bodyComp?.example?.body_text?.[0]) {
+                setBodyExamples(bodyComp.example.body_text[0]);
+            }
+
+            // ✅ HEADER MEDIA
+            let mediaUrl = "";
+            if (headerComp?.example?.header_handle?.[0]) {
+                mediaUrl = headerComp.example.header_handle[0];
+            }
+
+            // ✅ BUTTONS
+            if (buttonsComp?.buttons) {
+                const formattedButtons = buttonsComp.buttons.map((btn: any) => ({
+                    id: Date.now() + Math.random(),
+                    type: btn.type === "PHONE_NUMBER" ? "PHONE" : btn.type,
+                    text: btn.text,
+                    url: btn.url,
+                    phone: btn.phone_number,
+                }));
+
+                setButtons(formattedButtons);
+            }
+
+            // ✅ FORM SET
             setForm({
                 name: templateData.name,
                 language: templateData.language,
                 category: templateData.category,
-                body:
-                    templateData.components?.find((c: any) => c.type === "BODY")?.text || "",
-                headerType:
-                    templateData.components?.find((c: any) => c.type === "HEADER")
-                        ?.format || "NONE",
-                media: "",
-                headerText: templateData.headerText,
-                footer: templateData.footer
+                body: bodyComp?.text || "",
+                headerType: headerComp?.format || "NONE",
+                media: mediaUrl,
+                headerText: headerComp?.text || "",
+                footer: templateData.footer || "",
             });
         }
     }, [templateData]);
+
+    useEffect(() => {
+        const variables = getVariables();
+
+        if (variables.length > 0) {
+            setBodyExamples((prev) => {
+                const newArr = [...prev];
+                while (newArr.length < variables.length) {
+                    newArr.push("");
+                }
+                return newArr.slice(0, variables.length);
+            });
+        } else {
+            setBodyExamples([]);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.body]);
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
             <DialogTitle>
@@ -357,6 +413,28 @@ const TemplateModal = ({ open, onClose, onSubmit, initialData }: Props) => {
                                 onChange={(e) => handleChange("body", e.target.value)}
                                 helperText="Use {{1}}, {{2}} for variables"
                             />
+
+                            {getVariables().length > 0 && (
+                                <Box>
+                                    <Typography variant="caption">Provide example values:</Typography>
+
+                                    <Stack spacing={1} mt={1}>
+                                        {getVariables().map((v: string, i: number) => (
+                                            <TextField
+                                                key={i}
+                                                size="small"
+                                                label={`Example for ${v}`}
+                                                value={bodyExamples[i] || ""}
+                                                onChange={(e) => {
+                                                    const updated = [...bodyExamples];
+                                                    updated[i] = e.target.value;
+                                                    setBodyExamples(updated);
+                                                }}
+                                            />
+                                        ))}
+                                    </Stack>
+                                </Box>
+                            )}
 
                             <TextField
                                 label="Footer (Optional)"
@@ -633,7 +711,7 @@ const TemplateModal = ({ open, onClose, onSubmit, initialData }: Props) => {
 
                                             {/* BODY */}
                                             <Typography>
-                                                {form.body || "Your message will appear here"}
+                                                {form.body.replace(/{{(\d+)}}/g, (_, i) => bodyExamples[i - 1] || `{{${i}}}`)}
                                             </Typography>
 
                                             {/* FOOTER */}
