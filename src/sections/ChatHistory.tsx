@@ -23,6 +23,7 @@ import UserAvatar from './UserAvatar';
 // types
 import { UserProfile } from 'types/user-profile';
 import { History } from 'types/chat';
+import { Box } from '@mui/system';
 // import { ThemeMode } from 'types/config';
 
 interface ChatHistoryProps {
@@ -62,6 +63,80 @@ const ChatHistory = ({ data, theme, user }: ChatHistoryProps) => {
   const ReplyPreview = ({ message }: any) => {
     if (!message) return null;
 
+    const payload = message.payload || {};
+    const type = message.type;
+
+    // 🔥 TEMPLATE SUPPORT
+    if (type === "template") {
+      const template = payload?.request?.template;
+      const dbTemplate = payload?.templateData;
+
+      const bodyText =
+        message.text ||
+        dbTemplate?.components?.find((c: any) => c.type === "BODY")?.text ||
+        "Template message";
+
+      const header = template?.components?.find(
+        (c: any) => c.type === "header"
+      );
+
+      const headerUrl =
+        header?.parameters?.[0]?.image?.link ||
+        header?.parameters?.[0]?.video?.link ||
+        header?.parameters?.[0]?.document?.link;
+
+      return (
+        <Stack
+          sx={{
+            borderLeft: "3px solid #25D366",
+            pl: 1,
+            mb: 1,
+            background: "rgba(0,0,0,0.05)",
+            borderRadius: 1,
+            maxWidth: 260
+          }}
+        >
+          {/* 🔥 SMALL HEADER PREVIEW */}
+          {headerUrl && (
+            <img
+              src={headerUrl}
+              style={{
+                width: 50,
+                height: 50,
+                objectFit: "cover",
+                borderRadius: 6,
+                marginBottom: 4
+              }}
+            />
+          )}
+
+          {/* 🔥 BODY TEXT */}
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 600,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical"
+            }}
+          >
+            {bodyText}
+          </Typography>
+
+          {/* 🔥 TEMPLATE LABEL */}
+          <Typography
+            variant="caption"
+            sx={{ fontSize: 10, color: "gray" }}
+          >
+            Template
+          </Typography>
+        </Stack>
+      );
+    }
+
+    // ✅ DEFAULT (OLD FLOW)
     return (
       <Stack
         sx={{
@@ -163,6 +238,7 @@ const ChatHistory = ({ data, theme, user }: ChatHistoryProps) => {
       payload?.audio?.url ||
       payload?.document?.url;
 
+
     if (type === "audio") {
       return (
         <audio
@@ -175,6 +251,103 @@ const ChatHistory = ({ data, theme, user }: ChatHistoryProps) => {
             height: 40
           }}
         />
+      );
+    }
+
+    // ================= TEMPLATE (WHATSAPP STYLE) =================
+    if (type === "template") {
+      const requestTemplate = payload?.request?.template;
+
+      // 🔥 IMPORTANT: use DB components (not request)
+      const dbComponents = history?.payload?.templateData?.components || [];
+
+      const header = requestTemplate?.components?.find(
+        (c: any) => c.type === "header"
+      );
+
+      const bodyText = history.text;
+
+      const buttonsComponent = dbComponents.find(
+        (c: any) => c.type === "BUTTONS"
+      );
+
+      const headerParam = header?.parameters?.[0];
+
+      const headerUrl =
+        headerParam?.image?.link ||
+        headerParam?.video?.link ||
+        headerParam?.document?.link;
+
+      const headerType = headerParam?.type;
+
+      return (
+        <Stack
+          sx={{
+            borderRadius: 3,
+            overflow: "hidden",
+            background: "#fff",
+            maxWidth: 300,
+          }}
+        >
+          {/* 🔥 HEADER */}
+          {headerUrl && headerType === "image" && (
+            <img
+              src={headerUrl}
+              style={{ width: "100%", maxHeight: 200, objectFit: "cover" }}
+            />
+          )}
+
+          {headerUrl && headerType === "video" && (
+            <video src={headerUrl} controls style={{ width: "100%" }} />
+          )}
+
+          {headerUrl && headerType === "document" && (
+            <Box
+              sx={{ p: 1.5, cursor: "pointer" }}
+              onClick={() => window.open(headerUrl)}
+            >
+              📄 View Document
+            </Box>
+          )}
+
+          {/* 🔥 BODY */}
+          <Stack sx={{ p: 1.5 }}>
+            <Typography sx={{ whiteSpace: "pre-line", fontSize: 14 }}>
+              {bodyText}
+            </Typography>
+          </Stack>
+
+          {/* 🔥 BUTTONS (WHATSAPP STYLE) */}
+          {buttonsComponent?.buttons?.length > 0 && (
+            <Stack sx={{ borderTop: "1px solid #eee" }}>
+              {buttonsComponent.buttons.map((btn: any, i: number) => (
+                <Box
+                  key={i}
+                  sx={{
+                    textAlign: "center",
+                    py: 1.3,
+                    fontSize: 14,
+                    color: "#00a884",
+                    fontWeight: 500,
+                    borderBottom:
+                      i !== buttonsComponent.buttons.length - 1
+                        ? "1px solid #eee"
+                        : "none",
+                    cursor: "pointer",
+                    "&:hover": {
+                      background: "#f5f5f5",
+                    },
+                  }}
+                >
+                  {/* ICONS */}
+                  {btn.type === "URL" && "🔗 "}
+                  {btn.type === "PHONE_NUMBER" && "📞 "}
+                  {btn.text}
+                </Box>
+              ))}
+            </Stack>
+          )}
+        </Stack>
       );
     }
 

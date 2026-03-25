@@ -18,19 +18,16 @@ class TemplateService {
   // ✅ Get single template
   async getTemplateById(channelId: string, templateId: string) {
     const response = await axiosServices.get(
-      `/templates/${channelId}/${templateId}`
+      `/templates/${channelId}/${templateId}`,
     );
     return response.data;
   }
 
   // ✅ Create template (dynamic)
-  async createTemplate(
-    channelId: string,
-    payload: CreateTemplatePayload
-  ) {
+  async createTemplate(channelId: string, payload: CreateTemplatePayload) {
     const response = await axiosServices.post(
       `/templates/${channelId}`,
-      payload
+      payload,
     );
     return response.data;
   }
@@ -39,11 +36,11 @@ class TemplateService {
   async updateTemplate(
     channelId: string,
     templateId: string,
-    payload: CreateTemplatePayload
+    payload: CreateTemplatePayload,
   ) {
     const response = await axiosServices.put(
       `/templates/${channelId}/${templateId}`,
-      payload
+      payload,
     );
     return response.data;
   }
@@ -51,7 +48,22 @@ class TemplateService {
   // ✅ Delete template
   async deleteTemplate(channelId: string, templateId: string) {
     const response = await axiosServices.delete(
-      `/templates/${channelId}/${templateId}`
+      `/templates/${channelId}/${templateId}`,
+    );
+    return response.data;
+  }
+
+  async sendTemplate(
+    channelId: string,
+    payload: {
+      templateName: string;
+      to: string;
+      bodyParams: string[];
+    },
+  ) {
+    const response = await axiosServices.post(
+      `/templates/send-template/${channelId}`,
+      payload,
     );
     return response.data;
   }

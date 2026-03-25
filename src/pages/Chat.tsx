@@ -46,14 +46,11 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
-  // MoreOutlined,
   PaperClipOutlined,
-  // PictureOutlined,
-  // SendOutlined,
   SmileOutlined,
-  SoundOutlined
+  SoundOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
-
 // types
 import { History as HistoryProps } from 'types/chat';
 import { UserProfile } from 'types/user-profile';
@@ -61,6 +58,7 @@ import { ThemeMode } from 'types/config';
 import { messageService } from 'service/message.service';
 import { CreateContactModal } from 'components/chat/CreateContactModel';
 import heic2any from "heic2any";
+import SendTemplateModal from 'components/chat/SendTemplateModal';
 const drawerWidth = 320;
 
 const Main = styled('main', { shouldForwardProp: (prop: string) => prop !== 'open' })(
@@ -107,6 +105,9 @@ const Chat = () => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [anchorElPlus, setAnchorElPlus] = useState<null | HTMLElement>(null);
+  const openPlusMenu = Boolean(anchorElPlus);
 
   const handleEditOpen = () => setEditModalOpen(true);
   const handleEditClose = () => setEditModalOpen(false);
@@ -344,6 +345,14 @@ const Chat = () => {
 
     setAudioBlob(null);
     setRecordModalOpen(false);
+  };
+
+  const handlePlusClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorElPlus(event.currentTarget);
+  };
+
+  const handlePlusClose = () => {
+    setAnchorElPlus(null);
   };
 
   // close sidebar when widow size below 'md' breakpoint
@@ -749,6 +758,39 @@ const Chat = () => {
                         </Popper>
                       </>
                       <IconButton
+                        sx={{ opacity: 0.7 }}
+                        size="medium"
+                        color="secondary"
+                        onClick={handlePlusClick}
+                      >
+                        <PlusOutlined />
+                      </IconButton>
+                      <Menu
+                        anchorEl={anchorElPlus}
+                        open={openPlusMenu}
+                        onClose={handlePlusClose}
+                        anchorOrigin={{
+                          vertical: "top",
+                          horizontal: "right",
+                        }}
+                        transformOrigin={{
+                          vertical: "bottom",
+                          horizontal: "left",
+                        }}
+                      >
+                        <MenuItem
+                          onClick={() => {
+                            handlePlusClose();
+                            setTemplateModalOpen(true);
+                          }}
+                        >
+                          📩 Send Template
+                        </MenuItem>
+
+                        {/* Future options */}
+                        <MenuItem disabled>📊 Campaign (Coming soon)</MenuItem>
+                      </Menu>
+                      <IconButton
                         sx={{ opacity: 0.5 }}
                         size="medium"
                         color="secondary"
@@ -875,6 +917,14 @@ const Chat = () => {
           </Stack>
         </Box>
       </Dialog>
+      {templateModalOpen && (
+        <SendTemplateModal
+          channelId={user?.channel_id as string}
+          open={templateModalOpen}
+          onClose={() => setTemplateModalOpen(false)}
+          user={user}
+        />
+      )}
     </Box>
   );
 };
